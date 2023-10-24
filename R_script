@@ -145,9 +145,6 @@ performance_metrics$NPV <- paste0(round(100*(performance_metrics$TN)/(performanc
  u2_metrics <- data.frame(Drug = report_columns, U2R, U2S)
 
 write_xlsx(mismatch_summaries, path="")
-write_xlsx(performance_metrics, path="")
-#write.csv(performance_metrics, "")
-write_xlsx(u2_metrics, path="")
-#write.csv(u2_metrics, "")
-write_xlsx(result_summary, path="")
-#write_csv(result_summary, "")
+write.csv(performance_metrics, file="performance_metrics.csv",row.names=FALSE)
+write.csv(u2_metrics, file="uncertain_metrics.csv",row.names=FALSE)
+write.csv(result_summary, file="result_summary.csv",row.names=FALSE)
