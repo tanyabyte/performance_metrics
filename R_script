@@ -1,8 +1,11 @@
 library(dplyr)
 library(writexl)
 
-report <- read.csv("")
-reference <- read.csv("/Users/TGrechuk/Desktop/WGS_validation/WGS-validation-simple.csv")
+args <- commandArgs(trailingOnly = TRUE)
+
+report <- read.csv(args[1])
+
+reference <- read.csv(args[2])
 
 report[] <- lapply(report, function (x) {
      ifelse(grepl("^No mutation", x), "S",
