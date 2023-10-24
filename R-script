@@ -1,0 +1,151 @@
+https://storage.googleapis.com/theiagen-public-files-rp/terra/sars-cov-2-files/assign_clusters.R
+
+library(dplyr)
+
+report <- read.csv("")
+reference <- read.csv("/Users/TGrechuk/Desktop/WGS_validation/WGS-validation-simple.csv")
+
+report[] <- lapply(report, function (x) {
+     ifelse(grepl("^No mutation", x), "S",
+            ifelse(grepl("^Mutation", x), "R",
+                   ifelse(grepl("^Predicted susceptibility", x), "S",
+                          ifelse(grepl("^The detected mutation", x), "U",
+                                 ifelse(grepl("^Predicted low-level resistance", x), "R",
+                                        ifelse(grepl("^Predicted resistance", x), "R",
+                                               x)
+                                 )
+                          )
+                   )
+            )
+     )
+})
+
+reference[reference == ''] <- NA
+
+#columns to be compared
+report_columns <- c("M_DST_B01_INH", "M_DST_C01_ETO", "M_DST_D01_RIF", "M_DST_E01_PZA", "M_DST_F01_EMB", "M_DST_G01_AMK", "M_DST_H01_KAN", "M_DST_I01_CAP", "M_DST_J01_MFX")
+reference_columns <- c("inhA.0.1", "ETA","RIF", "PZA", "EMB", "AMK", "KAN", "CAP","MOX")
+
+#merge report and reference on ID
+merged_data <- merge(report, reference, by.x = "MDL.sample.accession.numbers", by.y = "C.Number")
+
+matches <- rep(0, length(report_columns))
+mismatches <- rep(0, length(report_columns))
+
+ for (i in 1:length(report_columns)) {
+ # Calculate matches (ignoring NA values)
+     matches[i] <- sum(merged_data[[report_columns[i]]] == merged_data[[reference_columns[i]]], na.rm = TRUE)
+     
+     # Calculate mismatches (ignoring NA values)
+     mismatches[i] <- sum(merged_data[[report_columns[i]]] != merged_data[[reference_columns[i]]], na.rm = TRUE)
+ }
+
+
+ result_summary <- data.frame(
+     Drug = sapply(strsplit(report_columns, "_"), function(x) tail(x, n = 1)),
+     Matches = matches,
+     Mismatches = mismatches
+ )
+
+ mismatch_summaries <- list()
+
+ # Iterate over each drug and identify mismatches
+ for (i in 1:length(report_columns)) {
+     # Extract relevant columns and remove rows with NA in reference column
+     drug_mismatches <- merged_data %>%
+         filter(!is.na(.data[[reference_columns[i]]])) %>%
+         filter(.data[[report_columns[i]]] != .data[[reference_columns[i]]]) %>%
+         mutate(Drug = report_columns[i]) %>%
+         select("MDL.sample.accession.numbers", "report_result" = report_columns[i], "reference_result" = reference_columns[i], "Drug")
+     
+     # Check if there are no mismatches for this drug
+     if (nrow(drug_mismatches) == 0) {
+         drug_mismatches <- data.frame(
+             MDL.sample.accession.numbers = character(0),
+             report_result = character(0),
+             reference_result = character(0),
+             Drug = character(0)
+         )
+     }
+     
+     # Bind the mismatch summary to the list
+     mismatch_summaries[[i]] <- drug_mismatches
+ }
+
+# # match_summaries <- list()
+# 
+# # Iterate over each drug and identify matches
+# for (i in 1:length(report_columns)) {
+#   # Extract relevant columns and remove rows with NA in reference column
+#   drug_matches <- merged_data %>%
+#     filter(!is.na(.data[[reference_columns[i]]])) %>%
+#     filter(.data[[report_columns[i]]] == .data[[reference_columns[i]]]) %>%
+#     mutate(Drug = report_columns[i]) %>%
+#     select("MDL.sample.accession.numbers", "report_result" = report_columns[i], "reference_result" = reference_columns[i], "Drug")
+#   
+#   # Check if there are no mismatches for this drug
+#   if (nrow(drug_matches) == 0) {
+#     drug_matches <- data.frame(
+#       MDL.sample.accession.numbers = character(0),
+#       report_result = character(0),
+#       reference_result = character(0),
+#       Drug = character(0)
+#     )
+#   }
+#   
+#   # Bind the mismatch summary to the list
+#   match_summaries[[i]] <- drug_matches
+
+
+ TP <- TN <- FN <- FP <- numeric(length(report_columns))
+
+ for (i in 1:length(report_columns)) {
+     # Filter rows where the reference result is not empty
+     filtered_data <- merged_data %>%
+         filter(!is.na(.data[[reference_columns[i]]]) & .data[[reference_columns[i]]] != "")
+     
+     # Calculate True Positives (TP): Report result="R" and Reference result="R"
+     TP[i] <- sum(filtered_data[[report_columns[i]]] == "R" & filtered_data[[reference_columns[i]]] == "R")
+     
+     # Calculate True Negatives (TN): Report result="S" and Reference result="S"
+     TN[i] <- sum(filtered_data[[report_columns[i]]] == "S" & filtered_data[[reference_columns[i]]] == "S")
+     
+     # Calculate False Negatives (FN): Report result="S" and Reference result="R"
+     FN[i] <- sum(filtered_data[[report_columns[i]]] == "S" & filtered_data[[reference_columns[i]]] == "R")
+     
+     # Calculate False Positives (FP): Report result="R" and Reference result="S"
+     FP[i] <- sum(filtered_data[[report_columns[i]]] == "R" & filtered_data[[reference_columns[i]]] == "S")
+ }
+
+performance_metrics <- data.frame(Drug = report_columns, TP, TN, FN, FP)
+
+performance_metrics$Accuracy <- paste0(round(100*(performance_metrics$TP+performance_metrics$TN)/(performance_metrics$TP+performance_metrics$TN+performance_metrics$FN+performance_metrics$FP), 2), "%")
+performance_metrics$Sensitivity <- paste0(round(100*(performance_metrics$TP)/(performance_metrics$TP+performance_metrics$FN), 2), "%")
+performance_metrics$Specificity <- paste0(round(100*(performance_metrics$TN)/(performance_metrics$TN+performance_metrics$FP), 2), "%")
+performance_metrics$PPV <- paste0(round(100*(performance_metrics$TP)/(performance_metrics$TP+performance_metrics$FP), 2), "%")
+performance_metrics$NPV <- paste0(round(100*(performance_metrics$TN)/(performance_metrics$TN+performance_metrics$FN), 2), "%")
+
+ U2R <- U2S <- numeric(length(report_columns))
+
+ # Iterate over each drug and calculate U2R and U2S
+ for (i in 1:length(report_columns)) {
+     # Filter rows where the reference result is not empty
+     filtered_data <- merged_data %>%
+         filter(!is.na(.data[[reference_columns[i]]]) & .data[[reference_columns[i]]] != "")
+     
+     # Calculate U2R: Report result="U" and Reference result="R"
+     U2R[i] <- sum(filtered_data[[report_columns[i]]] == "U" & filtered_data[[reference_columns[i]]] == "R")
+     
+     # Calculate U2S: Report result="U" and Reference result="S"
+     U2S[i] <- sum(filtered_data[[report_columns[i]]] == "U" & filtered_data[[reference_columns[i]]] == "S")
+ }
+
+ u2_metrics <- data.frame(Drug = report_columns, U2R, U2S)
+
+write_xlsx(mismatch_summaries, path="")
+write_xlsx(performance_metrics, path="")
+#write.csv(performance_metrics, "")
+write_xlsx(u2_metrics, path="")
+#write.csv(u2_metrics, "")
+write_xlsx(result_summary, path="")
+write_csv(result_summary, "")
