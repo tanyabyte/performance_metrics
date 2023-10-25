@@ -1,5 +1,5 @@
 library(dplyr)
-library(writexl)
+library(openxlsx)
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -144,7 +144,9 @@ performance_metrics$NPV <- paste0(round(100*(performance_metrics$TN)/(performanc
 
  u2_metrics <- data.frame(Drug = report_columns, U2R, U2S)
 
-write_xlsx(mismatch_summaries, path="")
+sheet_names <- c("INH", "ETO", "RIF", "PZA", "EMB", "AMK", "KAN", "CAP", "MFX")
+mismatch_named_list <- setNames(mismatch_summaries, sheet_names)
+write.xlsx(mismatch_named_list, file="mismatch_summaries.xlsx", asTable = TRUE)
 write.csv(performance_metrics, file="performance_metrics.csv",row.names=FALSE)
 write.csv(u2_metrics, file="uncertain_metrics.csv",row.names=FALSE)
 write.csv(result_summary, file="result_summary.csv",row.names=FALSE)
