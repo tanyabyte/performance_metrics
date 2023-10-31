@@ -25,8 +25,8 @@ report[] <- lapply(report, function (x) {
 reference[reference == ''] <- NA
 
 #columns to be compared
-report_columns <- c("M_DST_B01_INH", "M_DST_C01_ETO", "M_DST_D01_RIF", "M_DST_E01_PZA", "M_DST_F01_EMB", "M_DST_G01_AMK", "M_DST_H01_KAN", "M_DST_I01_CAP", "M_DST_J01_MFX")
-reference_columns <- c("inhA.0.1", "ETA","RIF", "PZA", "EMB", "AMK", "KAN", "CAP","MOX")
+report_columns <- c("M_DST_B01_INH", "M_DST_C01_ETO", "M_DST_D01_RIF", "M_DST_E01_PZA", "M_DST_F01_EMB", "M_DST_G01_AMK", "M_DST_H01_KAN", "M_DST_I01_CAP", "M_DST_J01_MFX", "M_DST_K01_LFX", "M_DST_L01_BDQ", "M_DST_M01_CFZ", "M_DST_N01_LZD")
+reference_columns <- c("inhA.0.1", "ETA","RIF", "PZA", "EMB", "AMK", "KAN", "CAP","MOX", "LFX", "BDQ", "CFZ", "LZD")
 
 #merge report and reference on ID
 merged_data <- merge(report, reference, by.x = "MDL.sample.accession.numbers", by.y = "C.Number")
@@ -121,11 +121,68 @@ mismatches <- rep(0, length(report_columns))
 
 performance_metrics <- data.frame(Drug = report_columns, TP, TN, FN, FP)
 
-performance_metrics$Accuracy <- paste0(round(100*(performance_metrics$TP+performance_metrics$TN)/(performance_metrics$TP+performance_metrics$TN+performance_metrics$FN+performance_metrics$FP), 2), "%")
-performance_metrics$Sensitivity <- paste0(round(100*(performance_metrics$TP)/(performance_metrics$TP+performance_metrics$FN), 2), "%")
-performance_metrics$Specificity <- paste0(round(100*(performance_metrics$TN)/(performance_metrics$TN+performance_metrics$FP), 2), "%")
-performance_metrics$PPV <- paste0(round(100*(performance_metrics$TP)/(performance_metrics$TP+performance_metrics$FP), 2), "%")
-performance_metrics$NPV <- paste0(round(100*(performance_metrics$TN)/(performance_metrics$TN+performance_metrics$FN), 2), "%")
+performance_metrics$Accuracy <-
+  ifelse(
+    is.na(performance_metrics$TP) |
+      is.na(performance_metrics$TN) |
+      is.na(performance_metrics$FN) |
+      is.na(performance_metrics$FP) |
+      (
+        performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
+      ) == 0,
+    "",
+    
+    paste0(round(
+      100 * (performance_metrics$TP + performance_metrics$TN) / (
+        performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
+      ),
+      2
+    ), "%")
+  )
+performance_metrics$Sensitivity <-
+  ifelse(
+    is.na(performance_metrics$TP) |
+      is.na(performance_metrics$FN) |
+      (performance_metrics$TP + performance_metrics$FN) == 0,
+    "",
+    paste0(round(
+      100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FN),
+      2
+    ), "%")
+  )
+performance_metrics$Specificity <-
+  ifelse(
+    is.na(performance_metrics$TN) |
+      is.na(performance_metrics$FP) |
+      (performance_metrics$TN + performance_metrics$FP) == 0,
+    "",
+    paste0(round(
+      100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FP),
+      2
+    ), "%")
+  )
+performance_metrics$PPV <-
+  ifelse(
+    is.na(performance_metrics$TP) |
+      is.na(performance_metrics$FP) |
+      (performance_metrics$TP + performance_metrics$FP) == 0,
+    "",
+    paste0(round(
+      100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FP),
+      2
+    ), "%")
+  )
+performance_metrics$NPV <-
+  ifelse(
+    is.na(performance_metrics$TN) |
+      is.na(performance_metrics$FN) |
+      (performance_metrics$TN + performance_metrics$FN) == 0,
+    "",
+    paste0(round(
+      100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FN),
+      2
+    ), "%")
+  )
 
  U2R <- U2S <- numeric(length(report_columns))
 
@@ -144,7 +201,7 @@ performance_metrics$NPV <- paste0(round(100*(performance_metrics$TN)/(performanc
 
  u2_metrics <- data.frame(Drug = report_columns, U2R, U2S)
 
-sheet_names <- c("INH", "ETO", "RIF", "PZA", "EMB", "AMK", "KAN", "CAP", "MFX")
+sheet_names <- c("INH", "ETA","RIF", "PZA", "EMB", "AMK", "KAN", "CAP","MOX", "LFX", "BDQ", "CFZ", "LZD")
 mismatch_named_list <- setNames(mismatch_summaries, sheet_names)
 write.xlsx(mismatch_named_list, file="mismatch_summaries.xlsx", asTable = TRUE)
 write.csv(performance_metrics, file="performance_metrics.csv",row.names=FALSE)
