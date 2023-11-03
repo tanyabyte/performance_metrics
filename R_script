@@ -122,67 +122,39 @@ mismatches <- rep(0, length(report_columns))
 performance_metrics <- data.frame(Drug = report_columns, TP, TN, FN, FP)
 
 performance_metrics$Accuracy <-
-  ifelse(
-    is.na(performance_metrics$TP) |
-      is.na(performance_metrics$TN) |
-      is.na(performance_metrics$FN) |
-      is.na(performance_metrics$FP) |
-      (
-        performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
-      ) == 0,
-    "",
-    
-    paste0(round(
-      100 * (performance_metrics$TP + performance_metrics$TN) / (
-        performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
-      ),
-      2
-    ), "%")
-  )
+  ifelse((
+    performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
+  ) == 0,
+  "",
+  paste0(round(
+    100 * (performance_metrics$TP + performance_metrics$TN) / (
+      performance_metrics$TP + performance_metrics$TN + performance_metrics$FN + performance_metrics$FP
+    ),
+    2), "%"))
 performance_metrics$Sensitivity <-
-  ifelse(
-    is.na(performance_metrics$TP) |
-      is.na(performance_metrics$FN) |
-      (performance_metrics$TP + performance_metrics$FN) == 0,
-    "",
-    paste0(round(
-      100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FN),
-      2
-    ), "%")
-  )
+  ifelse((performance_metrics$TP + performance_metrics$FN) == 0,
+         "",
+         paste0(round(
+           100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FN),
+           2), "%"))
 performance_metrics$Specificity <-
-  ifelse(
-    is.na(performance_metrics$TN) |
-      is.na(performance_metrics$FP) |
-      (performance_metrics$TN + performance_metrics$FP) == 0,
-    "",
-    paste0(round(
-      100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FP),
-      2
-    ), "%")
-  )
+  ifelse((performance_metrics$TN + performance_metrics$FP) == 0,
+         "",
+         paste0(round(
+           100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FP),
+           2), "%"))
 performance_metrics$PPV <-
-  ifelse(
-    is.na(performance_metrics$TP) |
-      is.na(performance_metrics$FP) |
-      (performance_metrics$TP + performance_metrics$FP) == 0,
-    "",
-    paste0(round(
-      100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FP),
-      2
-    ), "%")
-  )
+  ifelse((performance_metrics$TP + performance_metrics$FP) == 0,
+         "",
+         paste0(round(
+           100 * (performance_metrics$TP) / (performance_metrics$TP + performance_metrics$FP),
+           2), "%"))
 performance_metrics$NPV <-
-  ifelse(
-    is.na(performance_metrics$TN) |
-      is.na(performance_metrics$FN) |
-      (performance_metrics$TN + performance_metrics$FN) == 0,
-    "",
-    paste0(round(
-      100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FN),
-      2
-    ), "%")
-  )
+  ifelse((performance_metrics$TN + performance_metrics$FN) == 0,
+         "",
+         paste0(round(
+           100 * (performance_metrics$TN) / (performance_metrics$TN + performance_metrics$FN),
+           2), "%"))
 
  U2R <- U2S <- numeric(length(report_columns))
 
